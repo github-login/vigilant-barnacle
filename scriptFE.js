@@ -14,7 +14,7 @@ $(document).ready(function() {
 	var config = {
 		lang: null, 
 		cat: null,
-		theme: null
+		themeID: null
 	};
 
 	/* this can be populated ONCE at runtime but is not needed */ /* harcoded changes once per year */
@@ -39,8 +39,13 @@ $(document).ready(function() {
 				if(config.cat == "a") { myValue += value.a; }
 				if(config.cat == "b") { myValue += value.a + value.t + value.b;	}
 				if(config.cat == "t") { myValue += value.t; }
-			var themeNumber = $(".dropdown-menu li a:eq(" + (key - 1) + ")").text().substring(0, 3);
-			$(".dropdown-menu li a:eq(" + (key - 1) + ")").text(themeNumber + " (0" + myValue + ")");
+				var test = $(".dropdown-menu li a:eq(" + (key - 1) + ")").contents().length
+				var value = $(".dropdown-menu li a:eq(" + (key - 1) + ")").contents()[test-1].nodeValue; 
+				$(".dropdown-menu li a:eq(" + (key - 1) + ")").contents()[test-1].nodeValue = value.replace(value.slice(-3), (myValue + ")") );
+				/*
+				var themeNumber = $(".dropdown-menu li a:eq(" + (key - 1) + ")").text().substring(0, 3)
+				$(".dropdown-menu li a:eq(" + (key - 1) + ")").text(themeNumber + " (0" + myValue + ")");
+				*/
 		});
 	};
 
@@ -56,7 +61,7 @@ $(document).ready(function() {
 
 	var updateConfig = function(property, value) {
 		currentTheme = [];
-		config.theme = null;
+		config.themeID = null;
 
 		config[property] = value;
 
@@ -65,7 +70,7 @@ $(document).ready(function() {
 		}
 
 		$("#my-btn").addClass("disabled");
-		if(config.theme != null) {
+		if(config.themeID != null) {
 			$("#my-btn").removeClass("disabled");
 		}
 
@@ -80,11 +85,10 @@ $(document).ready(function() {
 
 	//TODO: unused;
 	var resetConfig = function(){
-		config.lang = config.cat = config.theme = null; 
+		config.lang = config.cat = config.themeID = null; 
 	};
 
 	/* Dropdown */
-	var currentThemeID;
     var currentTheme;
 	var currentQuestion;
 	
@@ -99,33 +103,39 @@ $(document).ready(function() {
     	$("#correct").empty().hide();
 		$("#results").empty().hide();
 
-		currentThemeID = $(".dropdown-menu li").index(this);
-		/*
+		/* TODO:
 		$(".dropdown-menu li").removeClass("active");
 		$(this).toggleClass("active");
 		*/
-		updateConfig("theme", currentThemeID);
-		
-        $(".dropdown-toggle").text($(this).text());
+		//config.themeID = $(".dropdown-menu li").index(this);
+		updateConfig("themeID", $(".dropdown-menu li").index(this));
+
+        $(".dropdown-toggle").empty().append($(this).find('a').html());
 		
 		currentQuestion = 0;
 
 		flipflop = 1;
 
-		if(currentThemeID != 19) { /* Assemble a theme from 1 to 19 */
-			currentTheme = themesDB[currentThemeID];
+		var sixPack = [1, 6, 9, 11, 16, 19];
 
-			var sixPack = [1, 6, 9, 11, 16 , 19];
-			//currentThemeID--
-			/* fancy StackOverflow to save some LoC */ 
+		if(config.themeID != 19) { /* Assemble a theme from 1 to 19 */
+			//config.themeID--
+ 			/* fancy StackOverflow to save some LoC */ 
 			function filterByCat(element) {
 				//console.log(element[1] + this.toUpperCase());
     			return element[1] == this.toUpperCase() || element[1] == ' ';
 			}
 			
-			if(sixPack.indexOf((currentThemeID + 1)) > -1) {
+			currentTheme = themesDB[config.themeID];
+
+			if(sixPack.indexOf((config.themeID + 1)) > -1 && config.cat != "b") {
+				currentTheme = currentTheme.filter(filterByCat, config.cat);
+			}			
+			/*
+			if(sixPack.indexOf((config.themeID + 1)) > -1) {
 				currentTheme = config.cat != "b" ? currentTheme.filter(filterByCat, config.cat) : currentTheme;
 			}
+			 currentTheme = config.cat != "b" && sixPack.indexOf((config.themeID + 1)) > -1 ? themesDB[config.themeID].filter(filterByCat, config.cat) : themesDB[config.themeID]; */
 		} else { 
 			/* Assemble theme 20 *//* THEME 20 assemble */
 			var startClock;
@@ -133,7 +143,7 @@ $(document).ready(function() {
 			startClock = new Date(); 
 			var themesDBCopy = themesDB.slice(0);
 			/* Redo this in clever way */
-		  	var sixPack = [1, 6, 9, 11, 16 , 19];
+		  	
 			var bufferM = [];
 			var bufferA = [];
 			var bufferB = [];
@@ -181,11 +191,12 @@ $(document).ready(function() {
 				}
 			}
 
-			if(config.cat == "a" || config.cat == "b") {
-				addQuestions(3, bufferA);
-			}
+
 			if(config.cat == "t" || config.cat == "b") {
 				addQuestions(2, bufferT);
+			}
+			if(config.cat == "a" || config.cat == "b") {
+				addQuestions(3, bufferA);
 			}
 			if(config.cat == "b") {
 				addQuestions(3, bufferB);
@@ -217,24 +228,11 @@ $(document).ready(function() {
 	var wrongA = [];
 
 	$("#my-btn").click(function(event) { 
-		console.log(currentQuestion + " _ " +  currentTheme.length + " _ " + flipflop);
-		if(currentQuestion + 1 == currentTheme.length && (currentThemeID == 19 || flipflop == 2)) {
-			console.log('here');
-			/*
-			$('#wrong').show();
-			$('#wrong').css("display", "block");
-			$('#correct').show();
-			$('#correct').css("display", "block");
-			$('#results').show();
-			$('#results').css("display", "block");
-
-			$('.container').css("max-height", "none");
-			$('.container').css("height", "auto");
-			$('#mid').css("max-height", "none");
-			*/
-		} else {
-
-			if(currentThemeID == 19 || flipflop == 1) {
+		/* TODO: mod !! */
+	
+		//console.log(currentQuestion + " _ " +  currentTheme.length + " _ " + flipflop);
+			//if((config.themeID == 19 || flipflop == 1) || (currentQuestion == currentTheme.length - 1 && flipflop == 2)) {
+			if(config.themeID == 19 || flipflop == 1) {
 
 				if(config.lang == "bg") { myLang = 6; }
 				if(config.lang == "en") { myLang = 8; }
@@ -248,61 +246,75 @@ $(document).ready(function() {
 			          // currentQuestionAnswers.push($(this).index(".active"));
 			        }	
 			    }); 
-
 				var answersDB = [];
-				$.each(currentTheme[currentQuestion][myLang], function(key, value){
+				
+				if(currentTheme[currentQuestion][Q_IMG].length < 3) {
+					$.each(currentTheme[currentQuestion][myLang], function(key, value){
 					//console.log(value[0]);		
-					if(value[0] == 1) {		
-						$("#mid>.question .h4:eq(" + key +")").css("color","blue");
-						answersDB.push(key); 
-						//$(".question img:eq(" + key +")").css("border","2px solid red");
-					}	
-				});
-				//JSON.stringify();
-
-				if(currentTheme[currentQuestion][Q_IMG].length > 2) {
+						if(value[0] == 1) {		
+							$("#mid>.question .h4:eq(" + key +")").css("color","blue");
+							answersDB.push(key); 
+							//$(".question img:eq(" + key +")").css("border","2px solid red");
+						}	
+					});	
+				} else { 
 					$.each(currentTheme[currentQuestion][Q_IMG], function(key, value){
-					//console.log(value[0]);		
-					if(value[0] == 1) {				
-						$("#mid>.question>.qzone .img_ctl:eq(" + key +")").css("border","2px solid blue");
-						answersDB.push(key); 
-						//$("#mid>.question img:eq(" + key +")").css("border","2px solid blue");
-						//$(".question img:eq(" + key +")").css("border","2px solid red");
-					}	
-				});
+						//console.log(value[0]);		
+						if(value[0] == 1) {				
+							$("#mid>.question>.qzone .img_ctl:eq(" + key +")").css("border","2px solid blue");
+							answersDB.push(key); 
+							//$("#mid>.question img:eq(" + key +")").css("border","2px solid blue");
+							//$(".question img:eq(" + key +")").css("border","2px solid red");
+						}	
+					});
 				}
-
+				//JSON.stringify();
 				checkQuestion = userInput.toString() === answersDB.toString() ? true : false; 
+			var color = checkQuestion ? "green" : "red";
+				$("#mid>.question").css("border-left", "2px solid " + color);
+
 			
 			}
-			if(currentThemeID == 19 || flipflop == 2) {
-	
+			//if((config.themeID == 19 || flipflop == 2) || (currentQuestion == currentTheme.length - 1 && flipflop == 2)) {
+			if(config.themeID == 19 || flipflop == 2) {
+
 				var testQuestion = $("#mid>.question").detach();
-				testQuestion.css("border"," 2px solid red");
+				testQuestion.css("margin", "5px 0px");
 				//testQuestion.css("margin-top","10px");
 				//console.log(checkQuestion);
 				if(checkQuestion){
 					correct++;
-					testQuestion.css("border","2px solid green");
+					testQuestion.css("border-left","2px solid green");
 					//correctA.push(testQuestion);
 				 	//testQuestion.appendTo('#correct');
 			
 				} else {
 					wrong++;
-					testQuestion.css("border-color","red");
+					testQuestion.css("border-left","2px solid red");
 					//wrongA.push(testQuestion);
 					//testQuestion.appendTo('#wrong');
 				}
 				testQuestion.appendTo('#results');
-		
-				currentQuestion++;
-				renderQuestion();
-		
+
+				if(currentQuestion < currentTheme.length - 1) {
+					currentQuestion++;
+					renderQuestion();
+				} else {
+					console.log('here');
+					$('#wrong').show();
+					$('#wrong').css("display", "block");
+					$('#correct').show();
+					$('#correct').css("display", "block");
+					$('#results').show();
+					$('#results').css("display", "block");
+
+					$('.container').css("max-height", "none");
+					$('.container').css("height", "auto");
+					$('#mid').css("max-height", "none");
+				}
 			}	
-		}
 		flipflop = flipflop  == 1 ? 2 : 1;				
 	});	
-
 
 	function renderQuestion() {	
 		var cQuestion = currentTheme[currentQuestion];
@@ -314,7 +326,10 @@ $(document).ready(function() {
 		if(config.lang == "en") {
 			myLang = [7,8];
 		}
-
+/*
+		var testtitle = config.lang == "bg" ? 5 : 7; 
+		var testanswers = config.lang == "bg" ? 6 : 8; 
+*/ 
 		var qtitle = cQuestion[myLang[0]]; 
 			
 		/* shuffle either the text or the img answers */
@@ -371,7 +386,7 @@ $(document).ready(function() {
 			//imgSrc += currentTheme[currentQuestion][4][0]; /* this not neeed I kept it for reference */					
 	
 			if(img_count > 0) {
-				var imgSrc = "img/" + ("0" + (currentThemeID+1)).slice(-2) + "/";
+				var imgSrc = "img/" + ("0" + (config.themeID+1)).slice(-2) + "/";
 				
 				/*	Temporary before merging of signs in common dir TODO: distinguish between fig and sign
 					var imgSrc = "img/"; 
@@ -403,7 +418,7 @@ $(document).ready(function() {
 			string += '\n\t<div class="' + start + '">';
 			$.each(currentTheme[currentQuestion][Q_IMG], function(key, value) {
 				var imgSrc = "img/"; 				
-				var dirName = ("0" + (currentThemeID+1)).slice(-2);
+				var dirName = ("0" + (config.themeID+1)).slice(-2);
 				//var prefix = isNaN(value[1].charAt(0)) ? "" : dirName + "/"; 
 				var prefix = dirName + "/"; 
 				imgSrc += prefix; 								
