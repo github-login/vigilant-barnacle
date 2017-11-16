@@ -41,6 +41,7 @@ $(document).ready(function() {
 				if(config.cat == "t") { myValue += value.t; }
 				var test = $(".dropdown-menu li a:eq(" + (key - 1) + ")").contents().length
 				var value = $(".dropdown-menu li a:eq(" + (key - 1) + ")").contents()[test-1].nodeValue; 
+				myValue = myValue == 0 ? "00" : myValue; /* TODO */
 				$(".dropdown-menu li a:eq(" + (key - 1) + ")").contents()[test-1].nodeValue = value.replace(value.slice(-3), (myValue + ")") );
 				/*
 				var themeNumber = $(".dropdown-menu li a:eq(" + (key - 1) + ")").text().substring(0, 3)
@@ -79,8 +80,11 @@ $(document).ready(function() {
 		$("#mid>.question").remove();
 		$(".dropdown-toggle").empty();
 		$(".dropdown-toggle").append($.parseHTML('<span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span>'));
+		updateButton(0,0);
+	/*
 		$("#my-btn").empty().append("[0/0][0%}");
 		$("#my-btn").css("background", "linear-gradient(90deg, rgb(51, 122, 183)" + 0 + "%, rgb(40, 96, 144) 0%)");
+	*/	
 	};
 
 	//TODO: unused;
@@ -89,8 +93,9 @@ $(document).ready(function() {
 	};
 
 	/* Dropdown */
-    var currentTheme;
+    //var currentTheme;
 	var currentQuestion;
+	var startClock;
 	
 	$(".dropdown-menu li").click(function(event){
 		/*TODO: reset everything here after showing results*/
@@ -138,7 +143,7 @@ $(document).ready(function() {
 			 currentTheme = config.cat != "b" && sixPack.indexOf((config.themeID + 1)) > -1 ? themesDB[config.themeID].filter(filterByCat, config.cat) : themesDB[config.themeID]; */
 		} else { 
 			/* Assemble theme 20 *//* THEME 20 assemble */
-			var startClock;
+
 			
 			startClock = new Date(); 
 			var themesDBCopy = themesDB.slice(0);
@@ -178,15 +183,17 @@ $(document).ready(function() {
 			$.each(themesDBCopy, function(key, value){
 				//currentTheme[key] = [];
 				for(i=0;  i < lookUp[key]; i++) {
-					var randomKey = Math.floor((Math.random() * (value.length - 1)) + 1);
+					//var randomKey = Math.floor((Math.random() * (value.length - 1)) + 1); //random*(max - min) + min
+					var randomKey = Math.floor(Math.random() * value.length);
 					//currentTheme[key].push(randomKey);
 					currentTheme.push(themesDBCopy[key][randomKey]);
 				}
 			});			
-		
+			/* TODO: make sure  random includes 0 (zero) TODO:*/
 			function addQuestions(count, category) {
-				for(i=0; i<count; i++) {
-					var randomNumber = Math.floor((Math.random() * category.length) + 1);
+				for(i=0; i<count; i++) {		/* TODO off by one :( */
+					//var randomNumber = Math.floor((Math.random() * (category.length-1)) + 1); //random*(max - min) + min
+					var randomNumber = Math.floor(Math.random() * category.length);
 					currentTheme.push(category[randomNumber]);
 				}
 			}
@@ -207,6 +214,7 @@ $(document).ready(function() {
 		}
 
 		renderQuestion();
+		updateButton(currentQuestion+1, currentTheme.length);
 		//currentQuestion++
 	});
 	
@@ -299,7 +307,21 @@ $(document).ready(function() {
 				if(currentQuestion < currentTheme.length - 1) {
 					currentQuestion++;
 					renderQuestion();
+					updateButton(currentQuestion+1, currentTheme.length);
 				} else {
+
+			var stopClock = new Date();
+			/*
+			var progress = ((correct / (correct+wrong)) * 100); 
+			$("#my-btn").empty().append("[" + correct + "/" + wrong + "][" + progress.toFixed(0) + "%]");
+
+			//$("#my-btn").css("background", `linear-gradient(90deg, grey ${progress}, lightgrey 0%)`); 90deg, grey 40%, lightgrey 0%
+			//$("#mid>.question").empty();
+			//$("#my-btn").css("background", linear-gradient(90deg, rgb(51, 122, 183) ${progress}%, rgb(40, 96, 144) 0%)`);
+			$("#my-btn").css("background", "linear-gradient(90deg, rgb(51, 122, 183)" + progress.toFixed(0) + "%, rgb(40, 96, 144) 0%)");
+			*/
+		updateButton(correct, currentTheme.length);
+
 					console.log('here');
 					$('#wrong').show();
 					$('#wrong').css("display", "block");
@@ -315,6 +337,17 @@ $(document).ready(function() {
 			}	
 		flipflop = flipflop  == 1 ? 2 : 1;				
 	});	
+	
+
+	function updateButton(fraction, whole) {
+		/* TODO: consider spliting this into separate function */
+		var progress = ((fraction / whole) * 100).toFixed(0); 
+		//console.log(progress);
+		progress = progress == 'NaN' ? 0 : progress;
+		//console.log(progress);
+		$("#my-btn").empty().append("[" + fraction + "/" + whole + "][" + progress + "%]");
+		$("#my-btn").css("background", "linear-gradient(90deg, rgb(51, 122, 183)" + progress + "%, rgb(40, 96, 144) 0%)");
+	};
 
 	function renderQuestion() {	
 		var cQuestion = currentTheme[currentQuestion];
@@ -323,6 +356,8 @@ $(document).ready(function() {
 		if(config.lang == "bg") {
 			myLang = [5,6]; 
 		}
+		/* title[config.lang] title = {bg = 5; en = 7); answers[config.lang] answers = {bg = 6; en = 8} */
+		/* TODO:  offset approach base_title = 5; base_answers = 7; offset = 0/1;  currentQuestion[base_title+offset] currentQuestion[base_answers+offset]*/
 		if(config.lang == "en") {
 			myLang = [7,8];
 		}
@@ -344,13 +379,19 @@ $(document).ready(function() {
 		//var qtitle = currentTheme[currentQuestion][5]; 
 
 		//alert(currentTheme[currentQuestion][1]);
-		var catType ="";
-		//TODO: turn into switch 
+		
+		var catType ="q-cat-" + cQuestion[Q_CAT].toLowerCase();
+		/* TODO: for removal keep the error for reference
+		TypeError: cQuestion is undefined[Learn More]  scriptFE.js:352:7
+		TypeError: currentTheme[currentQuestion] is undefined[Learn More] scriptFE.js:257:1
+		but not with:
+		var catType = "";		
+		
+		// turn into switch 
 		if(cQuestion[Q_CAT] == "A"){ catType = "bike"; }
 		if(cQuestion[Q_CAT] == "T"){ catType = "transport"; }
 		if(cQuestion[Q_CAT] == "B"){ catType = "car"; } 
 
-		/*	
 			$(".question").removeClass("bike");
 			$(".question").removeClass("transport");
 			$(".question").removeClass("car");
@@ -358,6 +399,8 @@ $(document).ready(function() {
 		*/
 		//alert(catType);
 		/* <div style="display: flex;  justify-content: center; flex-direction: column;">  */
+
+
 		/* Pre <ES6 way for backward compatability */ 
 		var title = '';
 		title += '\n<h3>';
@@ -394,6 +437,14 @@ $(document).ready(function() {
 					var prefix = isNaN(currentTheme[currentQuestion][4][0].charAt(0)) ? "" : dirName + "/"; 
 					imgSrc += prefix; 
 				*/
+
+				/* primitive signs are png (for transperancy) , figures are jpg/jpeg */
+				/* TODO: this is all messed up */
+				var imgExt = currentTheme[currentQuestion][4][0].split('.')[1];
+				if(imgExt == "png") {
+					imgSrc = "img/png/";
+				}
+
 				/* consolidate with img_ctl" */
 				string += '\n\t<div class="img_ctl thumbnail">';
 				string += '\n\t\t<div class="figure">';
@@ -417,12 +468,14 @@ $(document).ready(function() {
 			if(img_count == 3) { start = "group3";}
 			string += '\n\t<div class="' + start + '">';
 			$.each(currentTheme[currentQuestion][Q_IMG], function(key, value) {
+				/*
 				var imgSrc = "img/"; 				
 				var dirName = ("0" + (config.themeID+1)).slice(-2);
 				//var prefix = isNaN(value[1].charAt(0)) ? "" : dirName + "/"; 
 				var prefix = dirName + "/"; 
 				imgSrc += prefix; 								
-
+				*/
+				var imgSrc = "img/png/"; 
 				/* TODO: set alts on img */
 				string += '\n\t\t<div class="btn btn-link" aria-label="">';
 				string += '\n\t\t\t<div class="img_ctl thumbnail">';
@@ -441,18 +494,10 @@ $(document).ready(function() {
 		}
 		//console.log(title);
 		//console.log(string);
-		/* TODO: consider spliting this into separate function */
-		var progress = (((currentQuestion+1) / currentTheme.length) * 100); 
-		$("#my-btn").empty().append("[" + (currentQuestion+1) + "/" + currentTheme.length + "][" + progress.toFixed(0) + "%]");
-
-		//$("#my-btn").css("background", `linear-gradient(90deg, grey ${progress}, lightgrey 0%)`); 90deg, grey 40%, lightgrey 0%
-		//$("#mid>.question").empty();
-		//$("#my-btn").css("background", linear-gradient(90deg, rgb(51, 122, 183) ${progress}%, rgb(40, 96, 144) 0%)`);
-		$("#my-btn").css("background", "linear-gradient(90deg, rgb(51, 122, 183)" + progress.toFixed(0) + "%, rgb(40, 96, 144) 0%)");
+		
 		var type = "question " + catType;  
 		var questionContainer = '<div class="' + type + '"> </div>'; 
 		$("#mid").append($.parseHTML( questionContainer ));
-
 		$("#mid>.question").append($.parseHTML( title  + string)); 
 	}
 });
