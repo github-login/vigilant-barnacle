@@ -1,5 +1,5 @@
 $(document).ready(function() {
-	var Q_PTS 	= 0; 
+	var Q_PTS 	= 0; .....
 	var Q_CAT 	= 1; 
 	var Q_ID  	= 2; 
 	var Q_ANSW	= 3;
