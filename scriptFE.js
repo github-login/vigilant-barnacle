@@ -501,3 +501,7 @@ $(document).ready(function() {
 		$("#mid>.question").append($.parseHTML( title  + string)); 
 	}
 });
+
+
+// Updated by Moninder for Git practice
+console.log("Hello from vigilant-barnacle!");
